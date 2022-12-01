@@ -1,0 +1,43 @@
+version: '3'
+
+volumes:
+  vhost:
+  html:
+
+services:
+  nginx-proxy:
+    restart: always
+    image: jwilder/nginx-proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /var/certs:/etc/nginx/certs:ro
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
+
+  letsencrypt-nginx-proxy-companion:
+    restart: always
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/certs:/etc/nginx/certs:rw
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+
+  hapttic:
+    restart: always
+    image: jsoendermann/hapttic
+    environment:
+      - VIRTUAL_HOST=dsp3930.speedforge.net
+      - LETSENCRYPT_HOST=dsp3930.speedforge.net
+      - LETSENCRYPT_EMAIL=dsp3930@gmail.com
+    volumes:
+      - /home/dsp3930/happtic/hapttic_request_handler.sh:/hapttic_request_handler.sh
+    command: ["-file", "/hapttic_request_handler.sh"]
+    depends_on:
+      - nginx-proxy
+      - letsencrypt-nginx-proxy-companion
